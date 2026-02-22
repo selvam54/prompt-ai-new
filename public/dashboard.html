@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – Prompt AI</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    body { padding-top: 64px; }
+
+    .dashboard {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* Profile section */
+    .profile-section {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: start;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .profile-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: var(--gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .profile-info h2 { font-size: 1.3rem; margin-bottom: 4px; }
+    .profile-info p { color: var(--text-muted); font-size: 0.9rem; }
+
+    .stats-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-card-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-card-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* History section */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .section-header h2 { font-size: 1.4rem; }
+
+    /* Prompt expand overlay */
+    .prompt-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(4px);
+    }
+    .prompt-modal.show { display: flex; }
+
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      max-width: 640px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      animation: fadeUp 0.3s ease;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+      transition: color var(--transition);
+    }
+    .modal-close:hover { color: var(--text); }
+
+    @media (max-width: 768px) {
+      .profile-section { grid-template-columns: 1fr; }
+      .stats-cards { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 480px) {
+      .stats-cards { grid-template-columns: 1fr; }
+      .profile-card { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <nav id="navbar" class="navbar"></nav>
+
+  <main class="dashboard">
+    <!-- Profile section -->
+    <div class="profile-section">
+      <div class="profile-card">
+        <div class="avatar" id="avatarEl">?</div>
+        <div class="profile-info">
+          <h2 id="userName">Loading...</h2>
+          <p id="userEmail">...</p>
+          <p style="margin-top:6px;font-size:0.8rem;color:var(--text-muted)" id="memberSince"></p>
+        </div>
+      </div>
+      <div class="stats-cards">
+        <div class="stat-card">
+          <div class="stat-card-num" id="totalCount">0</div>
+          <div class="stat-card-label">Total Prompts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-num" id="typeCount">0</div>
+          <div class="stat-card-label">Categories Used</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-num" id="todayCount">0</div>
+          <div class="stat-card-label">Today</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prompt History -->
+    <div class="section-header">
+      <h2>Prompt History</h2>
+      <a href="/" class="btn btn-primary" style="font-size:0.85rem;padding:10px 18px">⚡ New Prompt</a>
+    </div>
+
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" onclick="filterBy('All')">All</button>
+      <button class="filter-tab" onclick="filterBy('Creative')">Creative</button>
+      <button class="filter-tab" onclick="filterBy('Technical')">Technical</button>
+      <button class="filter-tab" onclick="filterBy('Analytical')">Analytical</button>
+      <button class="filter-tab" onclick="filterBy('Business')">Business</button>
+      <button class="filter-tab" onclick="filterBy('Educational')">Educational</button>
+      <button class="filter-tab" onclick="filterBy('Conversational')">Conversational</button>
+      <button class="filter-tab" onclick="filterBy('Other')">Other</button>
+    </div>
+
+    <div id="historyList"></div>
+    <div id="alertDash" class="alert"></div>
+  </main>
+
+  <!-- Expand Prompt Modal -->
+  <div class="prompt-modal" id="promptModal" onclick="closeModal(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <span class="badge" id="modalTypeBadge"></span>
+          <span class="badge" id="modalAIBadge" style="margin-left:8px"></span>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('promptModal').classList.remove('show')">✕</button>
+      </div>
+      <div class="result-label" style="margin-bottom:8px">Original Input</div>
+      <div class="result-text" id="modalOriginal" style="margin-bottom:16px;font-size:0.85rem;color:var(--text-muted)"></div>
+      <div class="result-label" style="margin-bottom:8px">Generated Prompt</div>
+      <div class="result-text" id="modalGenerated"></div>
+      <button class="copy-btn" onclick="copyFromModal()">📋 Copy Prompt</button>
+    </div>
+  </div>
+
+  <script src="/js/utils.js"></script>
+  <script>
+    let allPrompts = [];
+    let currentFilter = 'All';
+    let currentModalText = '';
+
+    // ── Init ──────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.isLoggedIn()) {
+        window.location.href = '/login';
+        return;
+      }
+      loadUser();
+      await loadHistory();
+    });
+
+    function loadUser() {
+      const user = Auth.getUser();
+      if (!user) return;
+      const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      document.getElementById('avatarEl').textContent = initials;
+      document.getElementById('userName').textContent = user.name;
+      document.getElementById('userEmail').textContent = user.email;
+      document.getElementById('memberSince').textContent = 'Member since ' + new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    async function loadHistory() {
+      try {
+        const data = await apiRequest('/prompt/history?limit=100');
+        allPrompts = data.prompts;
+
+        // Stats
+        document.getElementById('totalCount').textContent = data.total;
+        const types = new Set(allPrompts.map(p => p.promptType));
+        document.getElementById('typeCount').textContent = types.size;
+        const today = allPrompts.filter(p => new Date(p.createdAt).toDateString() === new Date().toDateString()).length;
+        document.getElementById('todayCount').textContent = today;
+
+        renderHistory();
+      } catch (err) {
+        showAlert(document.getElementById('alertDash'), err.message);
+      }
+    }
+
+    function filterBy(type) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('historyList');
+      const filtered = currentFilter === 'All' ? allPrompts : allPrompts.filter(p => p.promptType === currentFilter);
+
+      if (filtered.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 12h6m-3-3v6m-7 3h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <h3>No prompts found</h3>
+            <p>${currentFilter === 'All' ? 'Generate your first prompt to get started!' : `No ${currentFilter} prompts yet.`}</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(p => `
+        <div class="history-card" id="card-${p._id}">
+          <div class="history-card-header">
+            <div>
+              <span class="badge ${getBadgeClass(p.promptType)}">${p.promptType}</span>
+              <span class="badge ${getAIBadgeClass(p.recommendedAI)}" style="margin-left:8px">${p.recommendedAI}</span>
+            </div>
+            <button class="btn btn-danger" style="font-size:0.8rem;padding:6px 12px" onclick="deletePrompt('${p._id}')">Delete</button>
+          </div>
+
+          <div class="history-original">Original: "${p.originalInput}"</div>
+          <div class="history-prompt">${escapeHtml(p.generatedPrompt)}</div>
+
+          <div class="history-footer">
+            <span class="history-date">${formatDate(p.createdAt)}</span>
+            <button class="btn btn-ghost" style="font-size:0.8rem;padding:6px 12px" onclick="expandPrompt(${JSON.stringify(p).replace(/"/g, '&quot;')})">View Full →</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    async function deletePrompt(id) {
+      if (!confirm('Delete this prompt?')) return;
+      try {
+        await apiRequest(`/prompt/${id}`, { method: 'DELETE' });
+        allPrompts = allPrompts.filter(p => p._id !== id);
+        document.getElementById('totalCount').textContent = allPrompts.length;
+        const card = document.getElementById(`card-${id}`);
+        card.style.animation = 'fadeUp 0.3s ease reverse';
+        setTimeout(() => renderHistory(), 300);
+      } catch (err) {
+        showAlert(document.getElementById('alertDash'), err.message);
+      }
+    }
+
+    function expandPrompt(p) {
+      currentModalText = p.generatedPrompt;
+      document.getElementById('modalTypeBadge').textContent = `📂 ${p.promptType}`;
+      document.getElementById('modalTypeBadge').className = `badge ${getBadgeClass(p.promptType)}`;
+      document.getElementById('modalAIBadge').textContent = `🤖 ${p.recommendedAI}`;
+      document.getElementById('modalAIBadge').className = `badge ${getAIBadgeClass(p.recommendedAI)}`;
+      document.getElementById('modalOriginal').textContent = p.originalInput;
+      document.getElementById('modalGenerated').textContent = p.generatedPrompt;
+      document.getElementById('promptModal').classList.add('show');
+    }
+
+    function closeModal(event) {
+      if (event.target === document.getElementById('promptModal')) {
+        document.getElementById('promptModal').classList.remove('show');
+      }
+    }
+
+    async function copyFromModal() {
+      const btn = document.querySelector('.modal-box .copy-btn');
+      await copyToClipboard(currentModalText, btn);
+    }
+
+    // Escape key closes modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') document.getElementById('promptModal').classList.remove('show');
+    });
+  </script>
+</body>
+</html>

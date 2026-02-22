@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt AI – Transform Your Ideas</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 24px 60px;
+      text-align: center;
+      position: relative;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      animation: float 8s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 500px; height: 500px;
+      top: -100px; left: -100px;
+      background: radial-gradient(circle, rgba(56,189,248,0.07), transparent 70%);
+    }
+    .orb-2 {
+      width: 400px; height: 400px;
+      bottom: -80px; right: -80px;
+      background: radial-gradient(circle, rgba(129,140,248,0.07), transparent 70%);
+      animation-delay: -4s;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-30px) scale(1.05); }
+    }
+
+    .hero-grid {
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(56,189,248,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,0.025) 1px, transparent 1px);
+      background-size: 56px 56px;
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(56,189,248,0.1);
+      border: 1px solid rgba(56,189,248,0.2);
+      color: var(--accent);
+      padding: 6px 16px;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeUp 0.6s ease;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      line-height: 1.05;
+      letter-spacing: -2px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    .hero h1 span {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 48px;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .prompt-card {
+      width: 100%;
+      max-width: 760px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      animation: fadeUp 0.6s 0.3s ease both;
+      position: relative;
+      z-index: 1;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    #promptInput {
+      flex: 1;
+      min-height: 100px;
+      font-size: 1rem;
+      resize: none;
+    }
+    .input-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .controls-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    #aiSelect { flex: 1; min-width: 160px; }
+    #generateBtn { flex: 1; min-width: 160px; justify-content: center; }
+
+    #recordingStatus {
+      font-size: 0.8rem;
+      color: var(--danger);
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+    #recordingStatus.show { display: flex; }
+    #recordingStatus::before {
+      content: '';
+      width: 8px; height: 8px;
+      background: var(--danger);
+      border-radius: 50%;
+      animation: pulse 1s infinite;
+    }
+
+    /* ── Prompt Engineer Result Box ── */
+    .pe-result-box {
+      width: 100%;
+      max-width: 760px;
+      margin-top: 32px;
+      display: none;
+      animation: fadeUp 0.4s ease;
+    }
+    .pe-result-box.show { display: block; }
+
+    /* Header strip */
+    .pe-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      border-bottom: none;
+    }
+    .pe-header-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .pe-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+    /* Input vs Output split */
+    .pe-io-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .pe-input-side {
+      background: rgba(239,68,68,0.04);
+      border: 1px solid var(--border);
+      border-right: none;
+      padding: 18px 22px;
+      border-top: none;
+    }
+    .pe-output-side {
+      background: rgba(56,189,248,0.04);
+      border: 1px solid var(--border);
+      padding: 18px 22px;
+      border-top: none;
+    }
+    .pe-io-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .pe-input-side .pe-io-label { color: #ef4444; }
+    .pe-output-side .pe-io-label { color: var(--accent); }
+    .pe-io-text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    /* Components grid */
+    .pe-components {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+    .pe-component-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      transition: all 0.2s ease;
+    }
+    .pe-component-item:hover {
+      border-color: rgba(56,189,248,0.3);
+      transform: translateY(-2px);
+    }
+    .pe-comp-icon { font-size: 1.1rem; margin-bottom: 6px; }
+    .pe-comp-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .pe-comp-value {
+      font-size: 0.78rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    /* Style badges row */
+    .pe-styles-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .pe-styles-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+    .pe-style-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .pe-style-badge.active {
+      background: rgba(56,189,248,0.12);
+      border-color: rgba(56,189,248,0.35);
+      color: var(--accent);
+    }
+
+    /* Generated prompt block */
+    .pe-generated {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 16px 16px;
+      padding: 22px 24px;
+    }
+    .pe-generated-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pe-prompt-text {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      font-size: 0.9rem;
+      line-height: 1.75;
+      color: var(--text);
+      white-space: pre-wrap;
+      font-family: 'Inter', monospace;
+    }
+    .pe-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      margin-top: 60px;
+      animation: fadeUp 0.6s 0.4s ease both;
+    }
+    .stat { text-align: center; }
+    .stat-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+    .features {
+      max-width: 1100px;
+      margin: 80px auto 40px;
+      padding: 0 24px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      transition: all var(--transition);
+    }
+    .feature-card:hover { border-color: rgba(56,189,248,0.2); transform: translateY(-4px); }
+    .feature-icon { font-size: 1.8rem; margin-bottom: 12px; }
+    .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+    .feature-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+
+    @media (max-width: 768px) {
+      .pe-io-row { grid-template-columns: 1fr; }
+      .pe-input-side { border-right: 1px solid var(--border); border-bottom: none; }
+      .pe-components { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .input-row { flex-direction: column; }
+      .input-actions { flex-direction: row; }
+      .stats-row { gap: 20px; }
+      .pe-components { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <nav id="navbar" class="navbar"></nav>
+  <div class="hero-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <main class="hero">
+    <div class="hero-eyebrow">⚡ AI-Powered Prompt Engineering</div>
+
+    <h1>Turn your ideas into<br/><span>perfect AI prompts</span></h1>
+    <p>Type anything — slang, casual thoughts, rough ideas — and get a structured, professional prompt for any AI model.</p>
+
+    <div class="prompt-card">
+      <div id="alertHome" class="alert"></div>
+
+      <div class="input-row">
+        <textarea
+          id="promptInput"
+          class="form-control"
+          placeholder="e.g. 'enna da english kathukalam easy ah' or 'explain quantum physics like i'm 5'..."
+        ></textarea>
+        <div class="input-actions">
+          <button id="voiceBtn" class="btn-icon" title="Voice input" onclick="toggleVoice()">🎤</button>
+          <button class="btn-icon" title="Clear" onclick="clearInput()">✕</button>
+        </div>
+      </div>
+
+      <div id="recordingStatus">Recording...</div>
+
+      <div class="controls-row">
+        <select id="aiSelect" class="form-control">
+          <option value="">🤖 Auto-select AI</option>
+          <option value="ChatGPT">💬 ChatGPT</option>
+          <option value="Gemini">✨ Gemini</option>
+          <option value="DeepSeek">🔍 DeepSeek</option>
+          <option value="Perplexity">🔭 Perplexity</option>
+        </select>
+        <button id="generateBtn" class="btn btn-primary" onclick="generatePrompt()">
+          ⚡ Generate Prompt
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Prompt Engineer Result Box ── -->
+    <div id="peResultBox" class="pe-result-box">
+
+      <!-- Header -->
+      <div class="pe-header">
+        <div class="pe-header-left">
+          <span class="pe-title">🧩 Prompt Engineer Output</span>
+          <span class="badge" id="typeBadge"></span>
+          <span class="badge" id="aiBadge"></span>
+          <span class="badge" id="langBadge" style="background:rgba(167,139,250,0.12);border-color:rgba(167,139,250,0.3);color:#a78bfa"></span>
+        </div>
+      </div>
+
+      <!-- ❌ Input vs ✅ Output -->
+      <div class="pe-io-row">
+        <div class="pe-input-side">
+          <div class="pe-io-label">❌ Normal User Input</div>
+          <div class="pe-io-text" id="peOriginal"></div>
+        </div>
+        <div class="pe-output-side">
+          <div class="pe-io-label">✅ Prompt Engineer Output</div>
+          <div class="pe-io-text" style="color:var(--text);font-style:normal;font-size:0.8rem">Structured prompt with Role · Task · Tone · Format · Constraints</div>
+        </div>
+      </div>
+
+      <!-- 5 Components -->
+      <div class="pe-components">
+        <div class="pe-component-item">
+          <div class="pe-comp-icon">🎭</div>
+          <div class="pe-comp-label">Role</div>
+          <div class="pe-comp-value" id="compRole">—</div>
+        </div>
+        <div class="pe-component-item">
+          <div class="pe-comp-icon">🎯</div>
+          <div class="pe-comp-label">Task</div>
+          <div class="pe-comp-value" id="compTask">—</div>
+        </div>
+        <div class="pe-component-item">
+          <div class="pe-comp-icon">🎨</div>
+          <div class="pe-comp-label">Tone</div>
+          <div class="pe-comp-value" id="compTone">—</div>
+        </div>
+        <div class="pe-component-item">
+          <div class="pe-comp-icon">📋</div>
+          <div class="pe-comp-label">Format</div>
+          <div class="pe-comp-value" id="compFormat">—</div>
+        </div>
+        <div class="pe-component-item">
+          <div class="pe-comp-icon">⚙️</div>
+          <div class="pe-comp-label">Constraints</div>
+          <div class="pe-comp-value" id="compConstraints">—</div>
+        </div>
+      </div>
+
+      <!-- Prompt Style Badges -->
+      <div class="pe-styles-row">
+        <span class="pe-styles-label">🧩 Prompt Style:</span>
+        <span class="pe-style-badge" id="styleRoleBased">🎭 Role-based</span>
+        <span class="pe-style-badge" id="styleStepByStep">📋 Step-by-step</span>
+        <span class="pe-style-badge" id="styleFewShot">💡 Few-shot</span>
+        <span class="pe-style-badge" id="styleStructured">🗂️ Structured</span>
+      </div>
+
+      <!-- Generated Prompt -->
+      <div class="pe-generated">
+        <div class="pe-generated-label">✨ Generated Structured Prompt</div>
+        <div class="pe-prompt-text" id="generatedText"></div>
+        <div class="pe-actions">
+          <button class="btn btn-primary" id="copyBtn" onclick="copyPrompt()" style="font-size:0.85rem;padding:10px 20px">
+            📋 Copy Prompt
+          </button>
+          <button class="btn btn-ghost" onclick="clearInput()" style="font-size:0.85rem;padding:10px 20px">
+            🔄 New Prompt
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num">10K+</div><div class="stat-label">Prompts Generated</div></div>
+      <div class="stat"><div class="stat-num">4</div><div class="stat-label">AI Models Supported</div></div>
+      <div class="stat"><div class="stat-num">7</div><div class="stat-label">Prompt Categories</div></div>
+    </div>
+  </main>
+
+  <section class="features">
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎭</div>
+        <h3>Role + Task + Tone</h3>
+        <p>Every prompt includes a structured Role, clear Task, and the right Tone — the core of professional prompt engineering.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🗣️</div>
+        <h3>Multi-language Input</h3>
+        <p>Type in Tamil, Hindi, or any language — even slang. Our AI understands and converts it into a perfect English prompt.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h3>Smart Style Detection</h3>
+        <p>Automatically picks the best prompt style: Role-based, Step-by-step, Few-shot, or Structured JSON/Table output.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>AI Recommendation</h3>
+        <p>We recommend the best AI model for your specific task — ChatGPT, Gemini, DeepSeek, or Perplexity.</p>
+      </div>
+    </div>
+  </section>
+
+  <script src="/js/utils.js"></script>
+  <script>
+    let isRecording = false;
+    let recognition = null;
+    let currentPromptText = '';
+
+    function toggleVoice() {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showAlert(document.getElementById('alertHome'), 'Voice input is not supported in your browser. Use Chrome or Edge.', 'error');
+        return;
+      }
+      if (isRecording) { recognition?.stop(); return; }
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        isRecording = true;
+        document.getElementById('voiceBtn').classList.add('recording');
+        document.getElementById('voiceBtn').textContent = '⏹';
+        document.getElementById('recordingStatus').classList.add('show');
+      };
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results).map(r => r[0].transcript).join('');
+        document.getElementById('promptInput').value = transcript;
+      };
+      recognition.onend = () => {
+        isRecording = false;
+        document.getElementById('voiceBtn').classList.remove('recording');
+        document.getElementById('voiceBtn').textContent = '🎤';
+        document.getElementById('recordingStatus').classList.remove('show');
+      };
+      recognition.onerror = (e) => { console.error('Speech error:', e.error); recognition.stop(); };
+      recognition.start();
+    }
+
+    function clearInput() {
+      document.getElementById('promptInput').value = '';
+      document.getElementById('peResultBox').classList.remove('show');
+    }
+
+    async function generatePrompt() {
+      if (!Auth.isLoggedIn()) { window.location.href = '/login'; return; }
+
+      const input = document.getElementById('promptInput').value.trim();
+      const preferredAI = document.getElementById('aiSelect').value;
+      const alertEl = document.getElementById('alertHome');
+      const btn = document.getElementById('generateBtn');
+
+      if (!input) return showAlert(alertEl, 'Please enter some text first');
+
+      setLoading(btn, true, 'Generating...');
+      try {
+        const data = await apiRequest('/prompt/generate', {
+          method: 'POST',
+          body: JSON.stringify({ input, preferredAI }),
+        });
+        currentPromptText = data.prompt.generatedPrompt;
+        displayResult(data.prompt);
+      } catch (err) {
+        showAlert(alertEl, err.message);
+      } finally {
+        setLoading(btn, false);
+      }
+    }
+
+    function displayResult(prompt) {
+      const box = document.getElementById('peResultBox');
+
+      // Badges
+      document.getElementById('typeBadge').textContent = `📂 ${prompt.promptType}`;
+      document.getElementById('typeBadge').className = `badge ${getBadgeClass(prompt.promptType)}`;
+      document.getElementById('aiBadge').textContent = `🤖 ${prompt.recommendedAI}`;
+      document.getElementById('aiBadge').className = `badge ${getAIBadgeClass(prompt.recommendedAI)}`;
+
+      const lang = prompt.originalLanguage || 'English';
+      document.getElementById('langBadge').textContent = `🌐 ${lang}`;
+
+      // IO
+      document.getElementById('peOriginal').textContent = `"${prompt.originalInput}"`;
+
+      // Components
+      const c = prompt.promptComponents || {};
+      document.getElementById('compRole').textContent = c.role || '—';
+      document.getElementById('compTask').textContent = c.task || '—';
+      document.getElementById('compTone').textContent = c.tone || '—';
+      document.getElementById('compFormat').textContent = c.format || '—';
+      document.getElementById('compConstraints').textContent = c.constraints || '—';
+
+      // Style badges
+      const styleMap = {
+        'Role-based': 'styleRoleBased',
+        'Step-by-step': 'styleStepByStep',
+        'Few-shot': 'styleFewShot',
+        'Structured': 'styleStructured',
+      };
+      Object.values(styleMap).forEach(id => document.getElementById(id).classList.remove('active'));
+      const activeStyle = styleMap[prompt.promptStyle];
+      if (activeStyle) document.getElementById(activeStyle).classList.add('active');
+
+      // Generated prompt
+      document.getElementById('generatedText').textContent = prompt.generatedPrompt;
+
+      box.classList.add('show');
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function copyPrompt() {
+      await copyToClipboard(currentPromptText, document.getElementById('copyBtn'));
+    }
+
+    document.getElementById('promptInput')?.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter') generatePrompt();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+mongodb+srv://selvam54sa_db_use:<db_password>@cluster.cu9ocxn.mongodb.net/prompt-ai

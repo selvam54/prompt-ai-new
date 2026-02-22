@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up – Prompt AI</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-bg-grid"></div>
+  <div class="auth-glow auth-glow-1"></div>
+  <div class="auth-glow auth-glow-2"></div>
+
+  <div class="auth-box">
+    <div class="auth-header">
+      <a href="/" class="logo">⚡ Prompt AI</a>
+      <h2>Create account</h2>
+      <p>Start generating professional AI prompts in seconds</p>
+    </div>
+
+    <div class="auth-card">
+      <div id="alert" class="alert"></div>
+
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="name" class="form-control" placeholder="John Doe" />
+      </div>
+
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="email" class="form-control" placeholder="you@example.com" />
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" class="form-control" placeholder="Min. 6 characters" />
+      </div>
+
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="confirm" class="form-control" placeholder="Repeat your password" />
+      </div>
+
+      <button id="signupBtn" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="handleSignup()">
+        Create Account →
+      </button>
+    </div>
+
+    <div class="auth-footer">
+      Already have an account? <a href="/login">Sign in</a>
+    </div>
+  </div>
+
+  <script src="/js/utils.js"></script>
+  <script>
+    if (Auth.isLoggedIn()) window.location.href = '/';
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSignup();
+    });
+
+    async function handleSignup() {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm').value;
+      const btn = document.getElementById('signupBtn');
+      const alert = document.getElementById('alert');
+
+      if (!name || !email || !password || !confirm) {
+        return showAlert(alert, 'Please fill in all fields');
+      }
+      if (password.length < 6) {
+        return showAlert(alert, 'Password must be at least 6 characters');
+      }
+      if (password !== confirm) {
+        return showAlert(alert, 'Passwords do not match');
+      }
+
+      setLoading(btn, true, 'Creating account...');
+
+      try {
+        const data = await apiRequest('/auth/signup', {
+          method: 'POST',
+          body: JSON.stringify({ name, email, password }),
+        });
+
+        Auth.save(data.token, data.user);
+        window.location.href = '/';
+      } catch (err) {
+        showAlert(alert, err.message);
+        setLoading(btn, false);
+      }
+    }
+  </script>
+</body>
+</html>
