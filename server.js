@@ -1,5 +1,7 @@
 // server.js - Main Express server entry point
-require('dotenv').config();
+
+require('dotenv').config(); // Load .env
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -10,37 +12,49 @@ const promptRoutes = require('./routes/prompt');
 
 const app = express();
 
-// ── Middleware ──────────────────────────────────────────────────────────────
+// ── Middleware ─────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Routes ──────────────────────────────────────────────────────────────────
+// ── Routes ─────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/prompt', promptRoutes);
 
-// Serve HTML pages
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public/login.html')));
-app.get('/signup', (req, res) => res.sendFile(path.join(__dirname, 'public/signup.html')));
-app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public/dashboard.html')));
+// ── HTML Pages ─────────────────────────────────────────
+app.get('/', (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/index.html'))
+);
+app.get('/login', (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/login.html'))
+);
+app.get('/signup', (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/signup.html'))
+);
+app.get('/dashboard', (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/dashboard.html'))
+);
 
-// ── Global Error Handler ────────────────────────────────────────────────────
+// ── Global Error Handler ───────────────────────────────
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!', error: err.message });
+  res.status(500).json({
+    message: 'Something went wrong!',
+    error: err.message,
+  });
 });
 
-// ── MongoDB Connection (FIXED) ──────────────────────────────────────────────
+// ── MongoDB Connection ─────────────────────────────────
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI;
 
-// 🔍 Debug log
+// ✅ FIX HERE
+const MONGO_URI = process.env.MONGODB_URI;
+
+// 🔍 Debug
 console.log("ENV CHECK:", MONGO_URI);
 
-// ❌ Stop app if no env
 if (!MONGO_URI) {
-  console.error("❌ MONGO_URI not found in environment variables");
+  console.error("❌ MONGODB_URI not found in environment variables");
   process.exit(1);
 }
 
